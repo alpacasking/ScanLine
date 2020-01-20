@@ -1,0 +1,22 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ColorMixer
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float4> ColorSource;
+Texture2D<float4> DepthSource;
+Texture2D<float4> DistanceSource;
+
+RWTexture2D<float4> Result;
+float3 DepthEdgeColor;
+float3 DistanceEdgeColor;
+
+[numthreads(1,1,1)]
+void ColorMixer (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	float depthEdge = DepthSource[id.xy].r;
+	float distanceEdge = DistanceSource[id.xy].r;
+	float3 c = ColorSource[id.xy];
+    Result[id.xy] =  float4(DepthEdgeColor*depthEdge +  (DistanceEdgeColor* distanceEdge + (1- distanceEdge)*c)*(1-depthEdge),1);
+}

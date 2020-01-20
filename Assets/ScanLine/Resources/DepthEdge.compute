@@ -1,0 +1,61 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel SobelForDepth
+#pragma kernel SobelForDistance
+#include "UnityCG.cginc"
+#include "Utility.hlsl"
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float4> Source;
+RWTexture2D<float4> Result;
+int Width;
+int Height;
+float EdgeStrength;
+float DistanceThresold;
+
+[numthreads(1,1,1)]
+void SobelForDepth(uint3 id : SV_DispatchThreadID)
+{
+    // sobel operator for color
+	uint2 bound = uint2(Width,Height); 
+    float s_1_1 = (Source[BoundIndex(id.xy + uint2( -1, -1),bound)].r);
+    float s0_1 = (Source[BoundIndex(id.xy + uint2( 0, -1),bound)].r);
+    float s1_1 = (Source[BoundIndex(id.xy + uint2( 1, -1),bound)].r);
+    float s_10 = (Source[BoundIndex(id.xy + uint2(-1, 0),bound)].r);
+    float s10 = (Source[BoundIndex(id.xy + uint2( 1, 0),bound)].r);
+    float s_11 = (Source[BoundIndex(id.xy + uint2(-1, 1),bound)].r);
+    float s01 = (Source[BoundIndex(id.xy + uint2( 0, 1),bound)].r);
+    float s11 = (Source[BoundIndex(id.xy + uint2( 1, 1),bound)].r);
+    
+    float sobelX = (-1*s_11+1*s11-2*s_10+2*s10-1*s_1_1+1*s1_1);
+    float sobelY = -(-1*s_11+1*s_1_1-2*s01+2*s0_1-1*s11+1*s1_1);
+	float sobelStrength = abs(sobelX) + abs (sobelY);
+	sobelStrength *= EdgeStrength;
+	sobelStrength = saturate(sobelStrength);
+	Result[id.xy]  = float4( sobelStrength , sobelStrength,sobelStrength,1.0 ) ;
+}
+
+[numthreads(1,1,1)]
+void SobelForDistance(uint3 id : SV_DispatchThreadID)
+{
+	if(Source[id.xy].g > DistanceThresold){
+		Result[id.xy]  = float4(0,0,0,1);
+		return;
+	}
+    // sobel operator for color
+	uint2 bound = uint2(Width,Height); 
+    float s_1_1 = (Source[BoundIndex(id.xy + uint2( -1, -1),bound)].r);
+    float s0_1 = (Source[BoundIndex(id.xy + uint2( 0, -1),bound)].r);
+    float s1_1 = (Source[BoundIndex(id.xy + uint2( 1, -1),bound)].r);
+    float s_10 = (Source[BoundIndex(id.xy + uint2(-1, 0),bound)].r);
+    float s10 = (Source[BoundIndex(id.xy + uint2( 1, 0),bound)].r);
+    float s_11 = (Source[BoundIndex(id.xy + uint2(-1, 1),bound)].r);
+    float s01 = (Source[BoundIndex(id.xy + uint2( 0, 1),bound)].r);
+    float s11 = (Source[BoundIndex(id.xy + uint2( 1, 1),bound)].r);
+    
+    float sobelX = (-1*s_11+1*s11-2*s_10+2*s10-1*s_1_1+1*s1_1);
+    float sobelY = -(-1*s_11+1*s_1_1-2*s01+2*s0_1-1*s11+1*s1_1);
+	float sobelStrength = abs(sobelX) + abs (sobelY);
+	sobelStrength *= EdgeStrength;
+	sobelStrength = saturate(sobelStrength);
+	Result[id.xy]  = float4( sobelStrength , sobelStrength,sobelStrength,1.0 ) ;
+}
